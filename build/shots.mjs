@@ -1,9 +1,10 @@
-// Screenshots for the README and the link preview, taken from the built demo: images/{hero,activity,map,timeline}.png and og.jpg.
+// Screenshots taken from the built demo: images/{hero,activity,map,timeline}.png for the README,
+// sharper images/site/*.jpg for the home page, and images/og.jpg for link previews.
 import fs from 'node:fs';
 import path from 'node:path';
 const pub = path.resolve(process.argv[2] || 'public');
 const img = path.join(pub, 'images');
-fs.mkdirSync(img, { recursive: true });
+fs.mkdirSync(path.join(img, 'site'), { recursive: true });
 // On Vercel's build image, use the serverless Chromium build; elsewhere, Playwright's own.
 let b;
 if (process.env.SHOTS_SERVERLESS) {
@@ -14,26 +15,30 @@ if (process.env.SHOTS_SERVERLESS) {
   const { chromium } = await import('playwright');
   b = await chromium.launch();
 }
-const ctx = await b.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+const ctx = await b.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
 const p = await ctx.newPage();
+const shot = async (name) => {
+  await p.screenshot({ path: path.join(img, `${name}.png`), scale: 'css' });
+  await p.screenshot({ path: path.join(img, 'site', `${name}.jpg`), type: 'jpeg', quality: 82 });
+};
 await p.goto('file://' + path.join(pub, 'demo/replay.html'));
 await p.waitForSelector('#tab-map', { timeout: 60000 });
 await p.waitForTimeout(2500);
 await p.addStyleTag({ content: '.rw-banner{display:none!important}' });
 const hide = await p.addStyleTag({ content: '.tl-state.past{visibility:hidden}' });
 await p.click('#tab-activity'); await p.waitForTimeout(1200);
-await p.screenshot({ path: path.join(img, 'activity.png') });
+await shot('activity');
 await p.click('#tab-map'); await p.waitForTimeout(2500);
-await p.screenshot({ path: path.join(img, 'map.png') });
+await shot('map');
 const card = p.locator('text=orders.ts').first();
 if (await card.count()) { await card.click(); await p.waitForTimeout(1500); }
-await p.screenshot({ path: path.join(img, 'hero.png') });
+await shot('hero');
 await p.keyboard.press('Escape'); await hide.evaluate(e => e.remove());
 const tr = await p.locator('.track').first().boundingBox();
 await p.mouse.move(tr.x + tr.width - 2, tr.y + tr.height / 2); await p.mouse.down();
 await p.mouse.move(tr.x + tr.width * 0.45, tr.y + tr.height / 2, { steps: 10 }); await p.mouse.up();
 await p.waitForTimeout(2000);
-await p.screenshot({ path: path.join(img, 'timeline.png') });
+await shot('timeline');
 await p.close();
 
 const og = await ctx.newPage();
@@ -65,7 +70,7 @@ h1 span{background:linear-gradient(90deg,#0a7cff,#a64df0 45%,#f0287a 75%,#ff8a00
 </body></html>`);
 await og.goto('file://' + ogFile, { waitUntil: 'load' });
 await og.evaluate(() => document.fonts.ready); await og.waitForTimeout(500);
-await og.screenshot({ path: path.join(img, 'og.jpg'), type: 'jpeg', quality: 90 });
+await og.screenshot({ path: path.join(img, 'og.jpg'), type: 'jpeg', quality: 90, scale: 'css' });
 fs.rmSync(ogFile);
 await b.close();
 console.log('shots done', fs.readdirSync(img));
