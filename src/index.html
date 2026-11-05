@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiveMap Demo</title>
+<meta name="description" content="Watch a real coding agent build a feature, and see every file, function, route and table it touches, live.">
+<meta property="og:title" content="LiveMap: see what your coding agent builds, live">
+<meta property="og:description" content="A replay of a real agent session. Free to use: npm i -g livemap">
+<meta property="og:image" content="https://livemap.in/images/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="/demo/fonts/geist-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230a7cff'/%3E%3Cstop offset='.5' stop-color='%23a64df0'/%3E%3Cstop offset='1' stop-color='%23ff8a00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='10' fill='url(%23g)'/%3E%3C/svg%3E">
+<style>
+@font-face{font-family:'Geist';src:url(/demo/fonts/geist-sans-latin-400-normal.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Geist';src:url(/demo/fonts/geist-sans-latin-500-normal.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Geist';src:url(/demo/fonts/geist-sans-latin-600-normal.woff2) format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'Geist';src:url(/demo/fonts/geist-sans-latin-700-normal.woff2) format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Geist Mono';src:url(/demo/fonts/geist-mono-latin-500-normal.woff2) format('woff2');font-weight:500;font-display:swap}
+:root{--bg:#eef0f5;--ink:#1d1d1f;--ink2:#55595f;--ink3:#86868b;--blue:#0a7cff;--purple:#a64df0;--pink:#f0287a;--orange:#ff8a00;
+  --sans:"Geist",-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",sans-serif;
+  --display:"Geist",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,Consolas,monospace;--ease:cubic-bezier(.32,.72,0,1)}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0d13;--ink:#f2f3f7;--ink2:#b4b9c4;--ink3:#7d8492}}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+.blobs{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.blobs i{position:absolute;border-radius:50%;filter:blur(90px)}
+.blobs i:nth-child(1){width:60vw;height:60vw;left:-15vw;top:-30vw;background:rgba(10,124,255,.2)}
+.blobs i:nth-child(2){width:55vw;height:55vw;right:-15vw;top:20vh;background:rgba(240,40,122,.12)}
+.blobs i:nth-child(3){width:45vw;height:45vw;left:30vw;bottom:-25vw;background:rgba(255,170,0,.13)}
+@media (prefers-color-scheme:dark){.blobs i:nth-child(1){background:rgba(61,155,255,.22)}.blobs i:nth-child(2){background:rgba(255,92,154,.14)}.blobs i:nth-child(3){background:rgba(140,138,255,.16)}}
+main,header,footer{position:relative;z-index:1}
+header{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:20px 24px}
+.brand{display:flex;align-items:center;gap:10px;font:650 18px var(--display);letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.mark{width:28px;height:28px;border-radius:9px;background:conic-gradient(from 210deg,var(--blue),var(--purple),var(--pink),var(--orange),var(--blue));box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+nav a{color:var(--ink2);text-decoration:none;font-size:15px;margin-left:24px}
+nav a:hover{color:var(--ink)}
+.hero{text-align:center;max-width:1120px;margin:0 auto;padding:56px 24px 36px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink2);padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.6);box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+@media (prefers-color-scheme:dark){.eyebrow{background:rgba(30,33,45,.6);box-shadow:0 0 0 1px rgba(255,255,255,.08)}}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:#1fae55;box-shadow:0 0 0 4px rgba(31,174,85,.18)}
+h1{font:700 clamp(38px,5.6vw,72px)/1.04 var(--display);letter-spacing:-.035em;margin:22px 0 0}
+h1 .nw{white-space:nowrap}
+@media (max-width:700px){h1 .nw{white-space:normal}}
+h1 .g{background:linear-gradient(90deg,var(--blue),var(--purple) 45%,var(--pink) 75%,var(--orange));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(18px,2vw,22px);line-height:1.45;color:var(--ink2);max-width:680px;margin:20px auto 0;letter-spacing:-.01em}
+.cta{display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:32px}
+.cmd{display:inline-flex;align-items:center;gap:14px;font:500 17px var(--mono);padding:14px 16px 14px 22px;border-radius:16px;background:rgba(255,255,255,.75);box-shadow:0 0 0 1px rgba(0,0,0,.06),0 10px 30px rgba(17,24,39,.08);color:var(--ink)}
+@media (prefers-color-scheme:dark){.cmd{background:rgba(32,36,48,.85);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.35)}}
+.cmd b{color:var(--purple);font-weight:500}
+.copy{font:600 14px var(--sans);border:0;border-radius:10px;padding:8px 14px;background:var(--ink);color:var(--bg);cursor:pointer;transition:transform .2s var(--ease)}
+.copy:active{transform:scale(.96)}
+.stage{max-width:1240px;margin:0 auto;padding:12px 24px 0}
+.window{position:relative;border-radius:22px;overflow:hidden;background:var(--bg);
+  box-shadow:0 0 0 1px rgba(255,255,255,.65),0 2px 6px rgba(17,24,39,.06),0 40px 120px rgba(17,24,39,.20)}
+@media (prefers-color-scheme:dark){.window{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 40px 120px rgba(0,0,0,.55)}}
+.window .frame{position:relative;width:100%;}
+.window iframe{position:absolute;left:0;top:0;width:1600px;height:1000px;border:0;transform-origin:0 0;background:var(--bg)}
+.hint .sm{display:none}@media (max-width:700px){.hint .sm{display:inline}}
+.hint{text-align:center;color:var(--ink3);font-size:14px;margin-top:16px}
+.replay{display:inline-flex;align-items:center;gap:6px;font:600 14px var(--sans);color:var(--blue);background:none;border:0;cursor:pointer;margin-left:8px}
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:1200px;margin:72px auto 0;padding:0 24px}
+.f{padding:22px 22px 24px;border-radius:20px;background:rgba(255,255,255,.62);box-shadow:0 0 0 1px rgba(0,0,0,.05),0 10px 30px rgba(17,24,39,.05);backdrop-filter:blur(20px)}
+@media (prefers-color-scheme:dark){.f{background:rgba(30,33,45,.62);box-shadow:0 0 0 1px rgba(255,255,255,.07)}}
+.f h3{font:650 18px var(--display);letter-spacing:-.015em;margin-bottom:8px}
+.f p{font-size:15px;line-height:1.5;color:var(--ink2)}
+.f .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;margin-bottom:14px}
+.f .ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic.b{background:rgba(10,124,255,.12);color:var(--blue)} .ic.p{background:rgba(166,77,240,.12);color:var(--purple)}
+.ic.k{background:rgba(240,40,122,.12);color:var(--pink)} .ic.o{background:rgba(255,138,0,.14);color:var(--orange)}
+.end{text-align:center;padding:88px 24px 40px}
+.end h2{font:700 clamp(30px,4vw,48px)/1.08 var(--display);letter-spacing:-.03em}
+.end p{color:var(--ink2);font-size:18px;margin:14px 0 28px}
+footer{text-align:center;color:var(--ink3);font-size:13px;padding:24px 24px 40px}
+footer a{color:var(--ink2)}
+@media (max-width:900px){.features{grid-template-columns:repeat(2,1fr)}nav a.hide{display:none}}
+@media (max-width:560px){.features{grid-template-columns:1fr}.cmd{font-size:15px}header{padding:16px}}
+.fade{opacity:0;transform:translateY(16px);animation:in .9s var(--ease) forwards}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.4s}
+@keyframes in{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+<header>
+  <a class="brand" href="https://livemap.in"><span class="mark" aria-hidden="true"></span>LiveMap</a>
+  <nav><a class="hide" href="#features">Features</a><a href="#install">Install</a></nav>
+</header>
+<main>
+  <section class="hero">
+    <span class="eyebrow fade d1"><span class="dot"></span>Live demo, no install</span>
+    <h1 class="fade d2"><span class="nw">See what your agent builds.</span><br><span class="g">Live.</span></h1>
+    <p class="lead fade d3">This is a replay of a real coding agent adding order cancellation to a small shop app. LiveMap shows every file, function, route and table it touches, and why.</p>
+    <div class="cta fade d4">
+      <span class="cmd"><span><b>$</b> npm i -g livemap</span><button class="copy" data-copy="npm i -g livemap">Copy</button></span>
+    </div>
+  </section>
+
+  <section class="stage fade d4" aria-label="Replay of an agent session">
+    <div class="window"><div class="frame" id="frame"><iframe id="app" title="LiveMap replay" src="/demo/replay.html?autoplay=1" loading="eager"></iframe></div></div>
+    <p class="hint"><span class="sm">Best on a larger screen. </span>Click anything: tabs, files, changes. Drag the timeline to rewind.<button class="replay" id="again" type="button">Replay from the start</button></p>
+  </section>
+
+  <section class="features" id="features">
+    <div class="f"><div class="ic b"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div><h3>Live activity</h3><p>Every prompt, tool call and change as the agent makes it, with the diff one click away.</p></div>
+    <div class="f"><div class="ic p"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="8.5" y="14" width="7" height="7" rx="2"/><path d="M6.5 10v2h11v-2M12 12v2"/></svg></div><h3>Architecture map</h3><p>Files, functions and imports drawn as a map that grows while the agent works.</p></div>
+    <div class="f"><div class="ic k"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></div><h3>Why it changed</h3><p>Each change linked to the prompt and step that caused it, in plain English.</p></div>
+    <div class="f"><div class="ic o"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg></div><h3>Rewind</h3><p>Scrub back to any moment and see the project exactly as it was.</p></div>
+  </section>
+
+  <section class="end" id="install">
+    <h2>Try it on your own project.</h2>
+    <p>Free to use. Runs locally. Your code never leaves your machine.</p>
+    <span class="cmd"><span><b>$</b> npx livemap</span><button class="copy" data-copy="npx livemap">Copy</button></span>
+  </section>
+</main>
+<footer>&copy; 2026 LiveMap &middot; <a href="https://livemap.in">livemap.in</a> &middot; <a href="https://www.npmjs.com/package/livemap">npm</a></footer>
+<script>
+(function(){
+  var f=document.getElementById('frame'), ifr=document.getElementById('app');
+  function fit(){ var w=f.clientWidth, s=w/1600; ifr.style.transform='scale('+s+')'; f.style.height=(1000*s)+'px'; }
+  addEventListener('resize',fit); fit();
+  document.getElementById('again').addEventListener('click',function(){ ifr.src='/demo/replay.html?autoplay=1&r='+Date.now(); });
+  document.querySelectorAll('.copy').forEach(function(b){ b.addEventListener('click',function(){
+    var t=b.getAttribute('data-copy');
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ b.textContent='Copied'; setTimeout(function(){b.textContent='Copy'},1600); },function(){ b.textContent='Select and copy'; });
+  });});
+})();
+</script>
+</body>
+</html>

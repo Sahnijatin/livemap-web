@@ -1,11 +1,19 @@
 // Screenshots for the README and the link preview, taken from the built demo: images/{hero,activity,map,timeline}.png and og.jpg.
-import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 const pub = path.resolve(process.argv[2] || 'public');
 const img = path.join(pub, 'images');
 fs.mkdirSync(img, { recursive: true });
-const b = await chromium.launch();
+// On Vercel's build image, use the serverless Chromium build; elsewhere, Playwright's own.
+let b;
+if (process.env.SHOTS_SERVERLESS) {
+  const { chromium } = await import('playwright-core');
+  const sc = (await import('@sparticuz/chromium')).default;
+  b = await chromium.launch({ executablePath: await sc.executablePath(), args: sc.args, headless: true });
+} else {
+  const { chromium } = await import('playwright');
+  b = await chromium.launch();
+}
 const ctx = await b.newContext({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 const p = await ctx.newPage();
 await p.goto('file://' + path.join(pub, 'demo/replay.html'));
@@ -26,9 +34,10 @@ await p.mouse.move(tr.x + tr.width - 2, tr.y + tr.height / 2); await p.mouse.dow
 await p.mouse.move(tr.x + tr.width * 0.45, tr.y + tr.height / 2, { steps: 10 }); await p.mouse.up();
 await p.waitForTimeout(2000);
 await p.screenshot({ path: path.join(img, 'timeline.png') });
-await ctx.close();
+await p.close();
 
-const og = await b.newPage({ viewport: { width: 1200, height: 630 } });
+const og = await ctx.newPage();
+await og.setViewportSize({ width: 1200, height: 630 });
 const fonts = '../demo/fonts/';
 const ogFile = path.join(img, '_og.html');
 fs.writeFileSync(ogFile, `<!doctype html><html><head><style>
