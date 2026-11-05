@@ -1,0 +1,18 @@
+<style>html.lm-playing .rw-banner{display:none!important}</style>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search); if(!q.has('autoplay')) return;
+  var tries=0;
+  function go(){
+    var b=document.querySelector('button[title="Play history"]');
+    if(!b){ if(tries++<100) return setTimeout(go,150); return; }
+    document.documentElement.classList.add('lm-playing');
+    b.click();
+    var t=setInterval(function(){
+      var live=!!document.querySelector('button[title="Play history"]');
+      if(live && document.documentElement.classList.contains('lm-playing')){ clearInterval(t); setTimeout(function(){document.documentElement.classList.remove('lm-playing');},400); }
+    },700);
+  }
+  if(document.readyState==='complete') setTimeout(go,600); else addEventListener('load',function(){setTimeout(go,600)});
+})();
+</script>
