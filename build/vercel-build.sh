@@ -2,6 +2,7 @@
 # Vercel build: builds LiveMap from source, assembles the site into public/ and takes the screenshots.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+rm -rf lm  # the build cache can restore an old checkout
 git clone --depth 1 https://github.com/Sahnijatin/livemap lm
 (cd lm && npm ci --no-audit --no-fund && npm --prefix ui ci --no-audit --no-fund && npm run build)
 rm -rf public
